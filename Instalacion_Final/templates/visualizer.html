@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NODE CLIENT</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; cursor: none; }
+        canvas { display: block; }
+        #debug { position: absolute; bottom: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 10px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+<div id="debug">CONNECTING...</div>
+
+<script>
+    let socket;
+    let screenID = {{ screen_id }}; 
+    let incomingData = { w_temp: 20, t_congestion: 0.5, t_pulse: 0, n_db: 0 };
+    let gridParticles = [];
+
+    function setup() {
+        createCanvas(windowWidth, windowHeight);
+        frameRate(30);
+        
+        // CONEXIÓN A TU IP
+        socket = io.connect('http://192.168.1.38:3000');
+        
+        socket.on('connect', () => {
+            document.getElementById('debug').innerText = "LINK ESTABLISHED: NODE " + screenID;
+        });
+        
+        socket.on('data_pulse', (data) => { incomingData = data; });
+
+        // Partículas para Screen 3
+        if (screenID === 3) {
+            for(let i=0; i<100; i++) {
+                gridParticles.push({x: random(width), y: random(height), vx: random(-1,1), vy: random(-1,1)});
+            }
+        }
+        rectMode(CENTER);
+    }
+
+    function draw() {
+        background(0, 20); // Motion blur
+        if (screenID === 1) drawClimate();
+        if (screenID === 2) drawTransit();
+        if (screenID === 3) drawNetwork();
+        drawInfo();
+    }
+
+    function drawClimate() {
+        let spectrum = map(incomingData.w_temp, 0, 35, 10, 200);
+        // Color degradado térmico
+        stroke(map(incomingData.w_temp, 10, 30, 0, 255), 100, map(incomingData.w_temp, 10, 30, 255, 0));
+        strokeWeight(2);
+        noFill();
+        beginShape();
+        for (let x = 0; x < width; x += 10) {
+            let y = height/2 + sin(x * 0.01 + incomingData.w_wave * 5) * spectrum + noise(x * 0.1, millis() * 0.001) * 50;
+            vertex(x, y);
+            if (x % 40 === 0) { push(); stroke(255, 50); strokeWeight(1); line(x, 0, x, height); pop(); }
+        }
+        endShape();
+    }
+
+    function drawTransit() {
+        let speed = map(incomingData.t_congestion, 0, 1, 2, 20);
+        let shift = (millis() * 0.1 * speed) % 100;
+        noStroke();
+        for (let x = 0; x < width; x += width/40) {
+            let n = noise(x + shift);
+            if (incomingData.t_pulse > 0.8 && n > 0.6) fill(255, 0, 0); // Alerta Roja
+            else fill(n > 0.5 ? 255 : 0);
+            rect(x, height/2, (width/45) * n, height);
+        }
+        stroke(0, 255, 255); strokeWeight(2);
+        line(0, height/2, width, height/2);
+    }
+
+    function drawNetwork() {
+        stroke(255); strokeWeight(1);
+        let agitation = map(incomingData.n_db, 30, 90, 0.5, 5);
+        for (let i = 0; i < gridParticles.length; i++) {
+            let p = gridParticles[i];
+            p.x += p.vx * agitation; p.y += p.vy * agitation;
+            if(p.x < 0 || p.x > width) p.vx *= -1;
+            if(p.y < 0 || p.y > height) p.vy *= -1;
+            if (i % 3 === 0) stroke(0, 255, 255); else if (i % 3 === 1) stroke(255, 0, 255); else stroke(255, 255, 0);
+            point(p.x, p.y);
+            for (let j = i + 1; j < gridParticles.length; j++) {
+                let d = dist(p.x, p.y, gridParticles[j].x, gridParticles[j].y);
+                if (d < 100) { stroke(255, map(d, 0, 100, 100, 0)); line(p.x, p.y, gridParticles[j].x, gridParticles[j].y); }
+            }
+        }
+    }
+
+    function drawInfo() {
+        fill(255); noStroke(); textSize(14); textAlign(RIGHT);
+        text("TEMP: " + incomingData.w_temp.toFixed(1) + "C", width - 20, 30);
+        text("NOISE: " + incomingData.n_db.toFixed(1) + "dB", width - 20, 50);
+    }
+    
+    function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+</script>
+</body>
+</html>
