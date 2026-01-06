@@ -52,7 +52,6 @@
 
     function drawClimate() {
         let spectrum = map(incomingData.w_temp, 0, 35, 10, 200);
-        // Color degradado térmico
         stroke(map(incomingData.w_temp, 10, 30, 0, 255), 100, map(incomingData.w_temp, 10, 30, 255, 0));
         strokeWeight(2);
         noFill();

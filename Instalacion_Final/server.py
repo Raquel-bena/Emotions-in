@@ -46,7 +46,6 @@ def fetch_apis():
             r_t = requests.get(t_url).json()
             if r_t.get('features'):
                 total_lines = len(r_t['features'])
-                # Simulación de congestión basada en hora real
                 current_hour = time.localtime().tm_hour
                 is_rush_hour = (8 <= current_hour <= 10) or (18 <= current_hour <= 20)
                 system_state['transit']['congestion'] = 0.9 if is_rush_hour else 0.4
@@ -85,3 +84,4 @@ if __name__ == '__main__':
     threading.Thread(target=pulse_generator, daemon=True).start()
     print(f"--- SISTEMA LISTO EN: http://192.168.1.38:{PORT} ---")
     socketio.run(app, host=HOST_IP, port=PORT)
+    
