@@ -1,0 +1,24 @@
+# --- Archivos de Sistema y Entorno ---
+.DS_Store
+Thumbs.db
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- Seguridad (¡No subir claves!) ---
+.env
+api_keys.py
+secrets.py
+
+# --- Logs y Bases de datos ---
+*.log
+*.sqlite3
+
+# --- TouchDesigner ---
+# A veces TD crea carpetas de backup que ocupan mucho
+CrashAutoSave.toe
+*.Timecode.xml
+
+# --- VS Code ---
+.vscode/
